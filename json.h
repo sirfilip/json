@@ -93,7 +93,8 @@ char *token_type_str(TokenType type) {
   case TokenEOF:
     return "TokenEOF";
   default:
-    fprintf(stderr, "unexpected token type: %d\n", type);
+    fprintf(stderr, "invalid token type: %d\n", type);
+    exit(1);
   }
 }
 
