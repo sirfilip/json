@@ -11,7 +11,7 @@ int main(void) {
   parser p = {
     .l = &l
   };
-  json_value j = parser_parse(&p);
+  json_value j = parse(&p);
   print_json(j);
   printf("\n");
   arena_free(&a);

@@ -530,7 +530,7 @@ json_value parse_token(parser *p) {
   }
 }
 
-json_value parser_parse(parser *p) {
+json_value parse(parser *p) {
   next_token(p); 
   return parse_token(p);
 }
