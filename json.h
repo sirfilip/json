@@ -7,6 +7,40 @@
 #include <ctype.h>
 #include <assert.h>
 
+typedef struct {
+  void *data;
+  size_t capacity;
+  size_t size;
+} arena;
+
+arena arena_new(size_t capacity) {
+  arena a = {
+    .capacity = capacity,
+    .size = 0
+  };
+  a.data = malloc(capacity);
+  if (a.data == NULL) {
+    perror("failed to allocate arena");
+    exit(1);
+  }
+  return a;
+}
+
+void *arena_alloc(arena *a, size_t size) {
+  assert(a->capacity > a->size + size && "arena capacity overflow");
+  void *ptr = &a->data[a->size];
+  a->size += size;
+  return ptr;
+}
+
+void arena_reset(arena *a) {
+  a->size = 0;
+}
+
+void arena_free(arena *a) {
+  free(a->data);
+}
+
 typedef enum {
   TokenComma = 1,
   TokenColon,
@@ -61,6 +95,7 @@ typedef struct {
   size_t position;
   size_t col;
   size_t line;
+  arena *a;
 } lexer;
 
 typedef struct {
@@ -164,7 +199,7 @@ Token eat_digit(lexer *lex) {
     assert(i < 20 && "Buffer overflow in eat digit");  
     buf[i++] = lex->input[lex->position++];
   }
-  char *result = (char *)malloc(i * sizeof(char) + 1);
+  char *result = (char *)arena_alloc(lex->a, i * sizeof(char) + 1);
   size_t j = 0;
   for (j=0; j < i; j++) {
     result[j] = buf[j];
@@ -196,7 +231,7 @@ Token eat_string(lexer *lex) {
   }
   // eat the closing quote
   lex->position++;
-  char *result = (char *)malloc(i * sizeof(char) + 1);
+  char *result = (char *)arena_alloc(lex->a, i * sizeof(char) + 1);
   size_t j = 0;
   for (j=0; j < i; j++) {
     result[j] = buf[j];
@@ -346,7 +381,7 @@ json_value parse_token(parser *p);
 json_value parse_array(parser *p) {
   // eat the open square bracket
   next_token(p);
-  json_array *ja = (json_array *)malloc(sizeof(json_array));
+  json_array *ja = (json_array *)arena_alloc(p->l->a, sizeof(json_array));
   json_value elements[200];
   size_t elements_count = 0;
   while (p->t.type != TokenClosingSquareBracket) {
@@ -363,7 +398,7 @@ json_value parse_array(parser *p) {
     next_token(p);
   }
 
-  json_value *elements_result = (json_value *) malloc(elements_count * sizeof(json_value));
+  json_value *elements_result = (json_value *) arena_alloc(p->l->a, elements_count * sizeof(json_value));
   size_t i = 0;
   for (i = 0; i < elements_count; i++) {
     elements_result[i] = elements[i];
@@ -379,8 +414,8 @@ json_value parse_array(parser *p) {
   };
 }
 
-char *token_string(char *token_string, size_t token_string_len) {
-  char *field = (char *)malloc(sizeof(char) * token_string_len + 1); 
+char *token_string(arena *a, char *token_string, size_t token_string_len) {
+  char *field = (char *)arena_alloc(a, sizeof(char) * token_string_len + 1); 
   memcpy(field, token_string, token_string_len);
   field[token_string_len + 1] = '\0';
   return field;
@@ -407,7 +442,7 @@ json_value parse_obj(parser *p) {
       fprintf(stderr, "expected string got: %s line: %zd col: %zd\n", token_type_str(p->t.type), p->t.line, p->t.col); 
       exit(1);
     }
-    char *field = token_string(p->t.value, p->t.value_len);
+    char *field = token_string(p->l->a, p->t.value, p->t.value_len);
     size_t field_len = p->t.value_len;
 
     next_token(p);
@@ -424,13 +459,13 @@ json_value parse_obj(parser *p) {
     next_token(p);
   }
 
-  obj_field *fields_result = (obj_field *)malloc(sizeof(obj_field) * fields_count);
+  obj_field *fields_result = (obj_field *)arena_alloc(p->l->a, sizeof(obj_field) * fields_count);
   size_t i = 0;
   for (i = 0; i < fields_count; i++) {
     fields_result[i] = fields[i];
   }
 
-  obj = (json_obj *)malloc(sizeof(json_obj));
+  obj = (json_obj *)arena_alloc(p->l->a, sizeof(json_obj));
   *obj = (json_obj) {
     .fields_len = fields_count,
     .fields = fields_result
@@ -461,7 +496,7 @@ json_value parse_token(parser *p) {
 
     case TokenNumber:
       val.type = JsonNumber;
-      int *num = malloc(sizeof(int));
+      int *num = (int *)arena_alloc(p->l->a, sizeof(int));
       *num = atoi(p->t.value);
       val.value = (void *)num;
       return val;
