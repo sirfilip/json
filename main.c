@@ -1,7 +1,7 @@
 #include "json.h"
 
 int main(void) {
-  char *input = "[1, 2, 3]";
+  char *input = "[1, 2, \"3\", {\"foo\": \"bar\", \"baz\": 42}]";
   arena a = arena_new(1024);
   lexer l = {
     .input = input,
