@@ -15,4 +15,5 @@ int main(void) {
   print_json(j);
   printf("\n");
   arena_free(&a);
+  return 0;
 }
