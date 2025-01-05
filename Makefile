@@ -1,3 +1,3 @@
 .PHONY: comp
 comp:
-	gcc -Wall -Wextra -o a.out -g json.c
+	gcc -Wall -Wextra -o a.out -g main.c

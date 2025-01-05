@@ -1,3 +1,6 @@
+#ifndef _JSON_H
+#define _JSON_H
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -151,29 +154,6 @@ void print_json(json_value json) {
   }
 }
 
-
-void next_token(parser *p);
-
-int main(void) {
-  char *test = "{\"foo\": \"bar\", \"baz\": 34, \"arr\":[1, 2, \"3\", { \"obj\": \"in array\"}]}"; 
-  lexer lex = (lexer) {
-    .input = test,
-    .input_len = strlen(test),
-    .position = 0,
-    .col = 0,
-    .line = 0
-  };
-  parser p = (parser) {
-    .l = &lex,
-    .t = (Token) {0},
-  };
-  json_value json = parser_parse(&p);
-  print_json(json);
-  printf("\n");
-  return 0;
-}
-
-json_value parse_token(parser *p);
 
 Token eat_digit(lexer *lex) {
   size_t line = lex->line;
@@ -361,6 +341,8 @@ void eat_token(TokenType type, parser *p) {
   next_token(p);
 };
 
+json_value parse_token(parser *p);
+
 json_value parse_array(parser *p) {
   // eat the open square bracket
   next_token(p);
@@ -500,3 +482,5 @@ json_value parser_parse(parser *p) {
   next_token(p); 
   return parse_token(p);
 }
+
+#endif
