@@ -1,6 +1,22 @@
 #ifndef _JSON_H
 #define _JSON_H
 
+#ifndef MAX_DIGIT_LEN
+#define MAX_DIGIT_LEN 20
+#endif
+
+#ifndef MAX_STR_LEN
+#define MAX_STR_LEN 100
+#endif
+
+#ifndef MAX_ARR_LEN
+#define MAX_ARR_LEN 200
+#endif
+
+#ifndef MAX_OBJ_LEN
+#define MAX_OBJ_LEN 200
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -193,10 +209,10 @@ void print_json(json_value json) {
 Token eat_digit(lexer *lex) {
   size_t line = lex->line;
   size_t col = lex->col;
-  char buf[20] = {0};
+  char buf[MAX_DIGIT_LEN] = {0};
   size_t i = 0;
   while (isdigit(lex->input[lex->position])) {
-    assert(i < 20 && "Buffer overflow in eat digit");  
+    assert(i < MAX_DIGIT_LEN && "Buffer overflow in eat digit");  
     buf[i++] = lex->input[lex->position++];
   }
   char *result = (char *)arena_alloc(lex->a, i * sizeof(char) + 1);
@@ -219,14 +235,14 @@ Token eat_string(lexer *lex) {
   lex->position++;
   size_t line = lex->line;
   size_t col = lex->col;
-  char buf[20] = {0};
+  char buf[MAX_STR_LEN] = {0};
   size_t i = 0;
   while (lex->input[lex->position] != '"') {
     if (lex->position >= lex->input_len) {
       fprintf(stderr, "unterminated string line: %zd col: %zd\n", line, col);
       exit(1);
     }
-    assert(i < 20 && "Buffer overflow in eat string");  
+    assert(i < MAX_STR_LEN && "Buffer overflow in eat string");  
     buf[i++] = lex->input[lex->position++];
   }
   // eat the closing quote
@@ -382,14 +398,14 @@ json_value parse_array(parser *p) {
   // eat the open square bracket
   next_token(p);
   json_array *ja = (json_array *)arena_alloc(p->l->a, sizeof(json_array));
-  json_value elements[200];
+  json_value elements[MAX_ARR_LEN];
   size_t elements_count = 0;
   while (p->t.type != TokenClosingSquareBracket) {
     if (p->t.type == TokenEOF) {
       fprintf(stderr, "unterminated array");
       exit(1);
     }
-    assert(elements_count < 200 && "array with more then 200 elements");
+    assert(elements_count < MAX_ARR_LEN && "array with more then max allowed elements");
     if (elements_count > 0) {
       eat_token(TokenComma, p);
     }
@@ -426,13 +442,13 @@ json_value parse_obj(parser *p) {
   next_token(p);
   size_t fields_count = 0;
   json_obj *obj = NULL;
-  obj_field fields[200];
+  obj_field fields[MAX_OBJ_LEN];
   while (p->t.type != TokenClosingCurlyBracket) {
     if (p->t.type == TokenEOF) {
       fprintf(stderr, "unterminated object\n");
       exit(1);
     }
-    assert(fields_count < 200 && "object with more then 200 fields");
+    assert(fields_count < MAX_OBJ_LEN && "object with more then max allowed fields");
 
     if (fields_count > 0) {
       eat_token(TokenComma, p);

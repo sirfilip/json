@@ -13,5 +13,6 @@ int main(void) {
   };
   json_value j = parser_parse(&p);
   print_json(j);
+  printf("\n");
   arena_free(&a);
 }
